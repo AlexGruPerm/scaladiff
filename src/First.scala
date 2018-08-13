@@ -120,11 +120,11 @@ object First extends App {
         row.getDouble("log_co")
       )}
 
-    logger.info("---------------------------------------")
-    logger.info("")
-    logger.info("   p_ts_begin="+p_ts_begin+"   p_ts_end="+p_ts_end)
-    logger.info("")
-    logger.info("---------------------------------------")
+    logger.debug("---------------------------------------")
+    logger.debug("")
+    logger.debug("   p_ts_begin="+p_ts_begin+"   p_ts_end="+p_ts_end)
+    logger.debug("")
+    logger.debug("---------------------------------------")
 
     val bond_bars_query_ =  prep_query_bars.bind().setInt("p_ticker_id", p_ticker_id)
                                                   .setInt("p_width_sec", p_width_sec)
@@ -136,30 +136,66 @@ object First extends App {
   }
 
 
-
-
  //==================================================================
   // read bar property and execute next for all bp.
 
-  val tendRes : Seq[TendBarsMnMx] = {for {
-                                          (l_ticker_id,l_width_sec, l_deep_sec) <- List((1,600, 3600)/*,(1,300,3600)*/)
+  val tendRes : Seq[TendBarsMnMx] = {for { //width=600, 60*10 = 10 mins.  3600 /60 sec. = 60 min = 1 hour * 3 = 3 hours
+                                          (l_ticker_id,l_width_sec, l_deep_sec) <- List((1,600, 3*3600)/*,(1,300,3600)*/)
                                           thisTendRes : TendBarsMnMx  <- get_bars_mnmx_tick_tend_1_conf(session, l_ticker_id, l_width_sec, l_deep_sec)
                                          } yield thisTendRes
                                     }.filter(r => (r.interval_begin_end_sec >= r.deep_sec))
 
-  for (tr <- tendRes) println(tr)
+  for (tr <- tendRes) logger.debug(tr.toString)
 
   val barsList : Seq[BarC] = for {
                                   barMnMx        <- tendRes
                                   thisBar : BarC <- get_bars_by_ts_interval(session, barMnMx.ticker_id, barMnMx.width_sec, barMnMx.from_ts, barMnMx.ts_end)
                                  } yield thisBar
 
-  //println("barsList.size="+barsList.size+"  first(ts_begin)="+barsList.head.ts_begin+"  last(ts_end)="+barsList.last.ts_end)
-  for (b <- barsList){
-    logger.info(" begin - end :    "+b.ts_begin+" - "+b.ts_end)
-  }
+  for (b <- barsList) logger.info(" begin - end :    "+b.ts_begin+" - "+b.ts_end+"  ["+b.btype+"] "+b.log_co)
+
 
   //divide full sequnce of Bars on 3 parts and calculate Ro.
+  val seqSeqBars_Parts = barsList.sliding(6,6).toList
+
+  logger.info("---------------------------------------")
+  for (b <- seqSeqBars_Parts){
+    logger.info(" parts : size="+b.size+" begin-end: "+b.head.ts_begin+"  "+b.last.ts_end)
+  }
+
+  //logger.info("!!!--- seqSeqBars_Parts.size = "+seqSeqBars_Parts.size)
+
+/*
+  val seqSeqBars_Parts_AddInfo = for ((blck,idx) <- seqSeqBars_Parts.zipWithIndex) yield {
+    logger.info("idx="+idx)
+    (idx,blck)
+  }
+*/
+
+  val seqSeqBars_Parts_AddInfo = for ((blck,idx) <- seqSeqBars_Parts.zipWithIndex) yield {
+                        (idx,(blck, Map(
+                              ("g",(blck.count(b => b.btype=="g"), blck.filter(b => b.btype=="g").map(b => b.log_co).sum )),
+                              ("r",(blck.count(b => b.btype=="r"), blck.filter(b => b.btype=="r").map(b => b.log_co).sum )),
+                              ("n",(blck.count(b => b.btype=="n"), blck.filter(b => b.btype=="n").map(b => b.log_co).sum ))
+                             )
+                        ))
+  }
+
+  logger.info("---------------------------------------")
+  logger.info(" seqSeqBars_Parts_AddInfo.size="+seqSeqBars_Parts_AddInfo.size)
+  logger.info("---------------------------------------")
+
+
+  //Ex:   g=Some((3,9.0E-4))  r=Some((2,-7.0E-4))  x=Some((0,0.0))
+
+  for (sbp <- seqSeqBars_Parts_AddInfo){
+    logger.info(sbp._1.toString)
+    logger.info("  "+sbp._2._1)
+    logger.info("  g="+sbp._2._2.get("g")+"  r="+sbp._2._2.get("r")+"  n="+sbp._2._2.get("n"))
+    logger.info("---------------------------------------")
+  }
+
+
 
   logger.info("END APPLICATION.")
 }
