@@ -90,6 +90,9 @@ object First extends App {
     rsTendBarsMnMx
   }
 
+  def simpleRound6Double(valueD : Double) = {
+    (valueD * 1000000).round / 1000000.toDouble
+  }
 
   /**
     *
@@ -136,11 +139,33 @@ object First extends App {
   }
 
 
- //==================================================================
+  /**
+    *
+    * @param p_seqBarInfo - Full seq of info
+    * @param p_index      - can be: 0,1,2 - only 3 parts
+    * @param p_btype      - p_btype can be: g,r,n
+    */
+  def get_btype_cnt_by_type_index(p_seqBarInfo : List[Map[String,(Int,Double)]], p_index :Int, p_btype :String) = {
+    val res = p_seqBarInfo(p_index).getOrElse(p_btype,(0,0.toDouble))._1
+    logger.info(" INSIDE   []   :   p_index = "+p_index+" p_btype = "+p_btype+" CNT = "+res )
+    res
+  }
+
+  def get_logCo_by_type_index(p_seqBarInfo : List[Map[String,(Int,Double)]], p_index :Int, p_btype :String) = {
+    val res = p_seqBarInfo(p_index).getOrElse(p_btype,(0,0.toDouble))._2
+    logger.info(" INSIDE   []   :   p_index = "+p_index+" p_btype = "+p_btype+" LOG_CO = "+res )
+    res
+  }
+
+
+
+
+
+  //===================================================================================================================
   // read bar property and execute next for all bp.
 
-  val tendRes : Seq[TendBarsMnMx] = {for { //width=600, 60*10 = 10 mins.  3600 /60 sec. = 60 min = 1 hour * 3 = 3 hours
-                                          (l_ticker_id,l_width_sec, l_deep_sec) <- List((1,600, 3*3600)/*,(1,300,3600)*/)
+  val tendRes : Seq[TendBarsMnMx] = {for {
+                                          (l_ticker_id, l_width_sec, l_deep_sec) <- List((1,600, 3*3600)/*,(1,300,3600)*/)
                                           thisTendRes : TendBarsMnMx  <- get_bars_mnmx_tick_tend_1_conf(session, l_ticker_id, l_width_sec, l_deep_sec)
                                          } yield thisTendRes
                                     }.filter(r => (r.interval_begin_end_sec >= r.deep_sec))
@@ -152,52 +177,91 @@ object First extends App {
                                   thisBar : BarC <- get_bars_by_ts_interval(session, barMnMx.ticker_id, barMnMx.width_sec, barMnMx.from_ts, barMnMx.ts_end)
                                  } yield thisBar
 
-  for (b <- barsList) logger.info(" begin - end :    "+b.ts_begin+" - "+b.ts_end+"  ["+b.btype+"] "+b.log_co)
-
+  for (b <- barsList) logger.debug(" begin - end :    "+b.ts_begin+" - "+b.ts_end+"  ["+b.btype+"] "+b.log_co)
 
   //divide full sequnce of Bars on 3 parts and calculate Ro.
   val seqSeqBars_Parts = barsList.sliding(6,6).toList
 
   logger.info("---------------------------------------")
   for (b <- seqSeqBars_Parts){
-    logger.info(" parts : size="+b.size+" begin-end: "+b.head.ts_begin+"  "+b.last.ts_end)
+    logger.debug(" parts : size="+b.size+" begin-end: "+b.head.ts_begin+"  "+b.last.ts_end)
   }
 
-  //logger.info("!!!--- seqSeqBars_Parts.size = "+seqSeqBars_Parts.size)
-
-/*
-  val seqSeqBars_Parts_AddInfo = for ((blck,idx) <- seqSeqBars_Parts.zipWithIndex) yield {
-    logger.info("idx="+idx)
-    (idx,blck)
-  }
-*/
-
-  val seqSeqBars_Parts_AddInfo = for ((blck,idx) <- seqSeqBars_Parts.zipWithIndex) yield {
-                        (idx,(blck, Map(
-                              ("g",(blck.count(b => b.btype=="g"), blck.filter(b => b.btype=="g").map(b => b.log_co).sum )),
-                              ("r",(blck.count(b => b.btype=="r"), blck.filter(b => b.btype=="r").map(b => b.log_co).sum )),
-                              ("n",(blck.count(b => b.btype=="n"), blck.filter(b => b.btype=="n").map(b => b.log_co).sum ))
-                             )
-                        ))
+  val seqSeqBars_Parts_AddInfo = for (blck <- seqSeqBars_Parts) yield {
+                                Map(
+                                    ("g",(blck.count(b => b.btype=="g"), simpleRound6Double(blck.filter(b => b.btype=="g").map(b => b.log_co).sum) )),
+                                    ("r",(blck.count(b => b.btype=="r"), simpleRound6Double(blck.filter(b => b.btype=="r").map(b => b.log_co).sum) )),
+                                    ("n",(blck.count(b => b.btype=="n"), simpleRound6Double(blck.filter(b => b.btype=="n").map(b => b.log_co).sum) ))
+                                   )
   }
 
+  /*
   logger.info("---------------------------------------")
   logger.info(" seqSeqBars_Parts_AddInfo.size="+seqSeqBars_Parts_AddInfo.size)
   logger.info("---------------------------------------")
+*/
 
+  val p0 = seqSeqBars_Parts_AddInfo(0)
+  val p1 = seqSeqBars_Parts_AddInfo(1)
+  val p2 = seqSeqBars_Parts_AddInfo(2)
+  logger.info(" TICKER_ID = "+seqSeqBars_Parts.head.head.ticker_id)
+  logger.info("0 - g=" + p0.get("g").getOrElse((0,0)) + "  r = " + p0.get("r").getOrElse((0,0)) + "  n = " + p0.get("n").getOrElse((0,0)) )
+  logger.info("1 - g=" + p1.get("g").getOrElse((0,0)) + "  r = " + p1.get("r").getOrElse((0,0)) + "  n = " + p1.get("n").getOrElse((0,0)) )
+  logger.info("2 - g=" + p2.get("g").getOrElse((0,0)) + "  r = " + p2.get("r").getOrElse((0,0)) + "  n = " + p2.get("n").getOrElse((0,0)) )
+  logger.info("---------------------------------------")
+  logger.info("                ")
+  logger.info("                ")
+  logger.info("                ")
 
-  //Ex:   g=Some((3,9.0E-4))  r=Some((2,-7.0E-4))  x=Some((0,0.0))
-
-  for (sbp <- seqSeqBars_Parts_AddInfo){
-    logger.info(sbp._1.toString)
-    logger.info("  "+sbp._2._1)
-    logger.info("  g="+sbp._2._2.get("g")+"  r="+sbp._2._2.get("r")+"  n="+sbp._2._2.get("n"))
-    logger.info("---------------------------------------")
+  //1.Test on G.(Green - up bars)
+  val wType :String =
+  if       (
+             (Seq(2,3) contains get_btype_cnt_by_type_index(seqSeqBars_Parts_AddInfo,0,"g")) &&
+             (Seq(2,3,4) contains get_btype_cnt_by_type_index(seqSeqBars_Parts_AddInfo,1,"g")) &&
+             (Seq(2,4)   contains get_btype_cnt_by_type_index(seqSeqBars_Parts_AddInfo,2,"g"))
+             &&
+                (get_logCo_by_type_index(seqSeqBars_Parts_AddInfo,2,"g") >
+                 get_logCo_by_type_index(seqSeqBars_Parts_AddInfo,1,"g")) &&
+                (get_logCo_by_type_index(seqSeqBars_Parts_AddInfo,1,"g") >
+                 get_logCo_by_type_index(seqSeqBars_Parts_AddInfo,0,"g"))
+  )
+  {
+   logger.info("GREEN WAY ! ")
+    "g"
+  }
+  //2. Test on R.(Red - down bars)
+   else if (
+             (Seq(2,3) contains get_btype_cnt_by_type_index(seqSeqBars_Parts_AddInfo,0,"r")) &&
+             (Seq(3,4) contains get_btype_cnt_by_type_index(seqSeqBars_Parts_AddInfo,1,"r")) &&
+             (Seq(4)   contains get_btype_cnt_by_type_index(seqSeqBars_Parts_AddInfo,2,"r"))
+               &&
+               (get_logCo_by_type_index(seqSeqBars_Parts_AddInfo,2,"r") <
+                 get_logCo_by_type_index(seqSeqBars_Parts_AddInfo,1,"r")) &&
+               (get_logCo_by_type_index(seqSeqBars_Parts_AddInfo,1,"r") <
+                 get_logCo_by_type_index(seqSeqBars_Parts_AddInfo,0,"r"))
+           )
+  {
+    logger.info("RED WAY!")
+    "r"
+  }
+  else {
+    logger.info("ELSE WAY.")
+    "n"
   }
 
 
 
-  logger.info("END APPLICATION.")
+  if (Seq("g","r") contains wType) {
+  //SAVE results into DB.
+    logger.info("-- ---------------------------------- --")
+    logger.info("                                        ")
+    logger.info(" FOUND "+wType+" way                    ")
+    logger.info(" SAVE ADVISE INTO DB FOR ticker_id="+seqSeqBars_Parts.head.head.ticker_id)
+    logger.info("                                        ")
+    logger.info("-- ---------------------------------- --")
+  }
+
+
 }
 
 
