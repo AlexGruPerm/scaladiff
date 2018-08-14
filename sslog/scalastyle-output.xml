@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="5.0">
+ <file name="C:\scaladiff\src\First.scala">
+  <error line="16" source="org.scalastyle.file.FileLineLengthChecker" severity="warning" message="File line length exceeds 160 characters"/>
+  <error column="6" line="79" source="org.scalastyle.scalariform.MethodNamesChecker" severity="warning" message="Method name does not match the regular expression '^[a-z][A-Za-z0-9]*(_=)?$'"/>
+  <error column="6" line="106" source="org.scalastyle.scalariform.MethodNamesChecker" severity="warning" message="Method name does not match the regular expression '^[a-z][A-Za-z0-9]*(_=)?$'"/>
+  <error column="6" line="148" source="org.scalastyle.scalariform.MethodNamesChecker" severity="warning" message="Method name does not match the regular expression '^[a-z][A-Za-z0-9]*(_=)?$'"/>
+  <error column="6" line="154" source="org.scalastyle.scalariform.MethodNamesChecker" severity="warning" message="Method name does not match the regular expression '^[a-z][A-Za-z0-9]*(_=)?$'"/>
+  <error column="6" line="11" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[a-z][A-Za-z]*$'"/>
+  <error column="6" line="13" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[a-z][A-Za-z]*$'"/>
+  <error column="6" line="28" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[A-Z][A-Za-z]*$'"/>
+  <error column="6" line="30" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[A-Z][A-Za-z]*$'"/>
+  <error column="6" line="32" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[A-Z][A-Za-z]*$'"/>
+  <error column="6" line="34" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[A-Z][A-Za-z]*$'"/>
+  <error column="6" line="42" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[A-Z][A-Za-z]*$'"/>
+  <error column="6" line="44" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[A-Z][A-Za-z]*$'"/>
+  <error column="6" line="68" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[A-Z][A-Za-z]*$'"/>
+  <error column="8" line="80" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[a-z][A-Za-z]*$'"/>
+  <error column="8" line="86" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[a-z][A-Za-z]*$'"/>
+  <error column="8" line="132" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[a-z][A-Za-z]*$'"/>
+  <error column="6" line="167" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[A-Z][A-Za-z]*$'"/>
+  <error column="6" line="177" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[A-Z][A-Za-z]*$'"/>
+  <error column="6" line="185" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[A-Z][A-Za-z]*$'"/>
+  <error column="6" line="193" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[A-Z][A-Za-z]*$'"/>
+  <error column="6" line="213" source="org.scalastyle.scalariform.FieldNamesChecker" severity="warning" message="Field name does not match the regular expression '^[A-Z][A-Za-z]*$'"/>
+ </file>
+</checkstyle>

@@ -209,25 +209,8 @@ object First extends App {
     logger.info(" [seqSeqBars_Parts_AddInfo]   ticker_id="+p._1+"  "+p.toString)
 
   }
-  /*
-  val p0 = seqSeqBars_Parts_AddInfo(0)
-  val p1 = seqSeqBars_Parts_AddInfo(1)
-  val p2 = seqSeqBars_Parts_AddInfo(2)
 
-  logger.info(" TICKER_ID = "+seqSeqBars_Parts.head.head.ticker_id)
-  logger.info("0 - g=" + p0.get("g").getOrElse((0,0)) + "  r = " + p0.get("r").getOrElse((0,0)) + "  n = " + p0.get("n").getOrElse((0,0)) )
-  logger.info("1 - g=" + p1.get("g").getOrElse((0,0)) + "  r = " + p1.get("r").getOrElse((0,0)) + "  n = " + p1.get("n").getOrElse((0,0)) )
-  logger.info("2 - g=" + p2.get("g").getOrElse((0,0)) + "  r = " + p2.get("r").getOrElse((0,0)) + "  n = " + p2.get("n").getOrElse((0,0)) )
-  logger.info("---------------------------------------")
-  logger.info("                ")
-  logger.info("                ")
-  logger.info("                ")
-  */
-
-
-
-
-  val wType /*: Seq[Int,String]*/ = for (cticker <- seqSeqBars_Parts_AddInfo.map(bi => bi._1).distinct.sortBy(v => v)) yield {
+  val wType = for (cticker <- seqSeqBars_Parts_AddInfo.map(bi => bi._1).distinct.sortBy(v => v)) yield {
       //1.Test on G.(Green - up bars)
     if (
       (Seq(2, 3) contains get_btype_cnt_by_type_index(cticker, seqSeqBars_Parts_AddInfo, 0, "g")) &&
