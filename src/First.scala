@@ -147,16 +147,18 @@ object First extends App {
     */
   def getBtypeCntByTypeIndex(p_ticker :Int, p_seqBarInfo : List[(Int,Map[String,(Int,Double)])], p_index :Int, p_btype :String) = {
     val res = p_seqBarInfo.filter(sb => sb._1 == p_ticker)(p_index)._2.getOrElse(p_btype,(0,0.toDouble))._1
-    logger.info(" INSIDE   []   :  p_ticker = "+p_ticker+"  index = "+p_index+" btype = "+p_btype+"   CNT = "+res )
+    logger.debug(" INSIDE   []   :  p_ticker = "+p_ticker+"  index = "+p_index+" btype = "+p_btype+"   CNT = "+res )
     res
   }
 
   def getLogCoByTypeIndex(p_ticker :Int, p_seqBarInfo : List[(Int,Map[String,(Int,Double)])], p_index :Int, p_btype :String) = {
     val res = p_seqBarInfo.filter(sb => sb._1 == p_ticker)(p_index)._2.getOrElse(p_btype,(0,0.toDouble))._2
-    logger.info(" INSIDE   []   :  p_ticker = "+p_ticker+"  index = "+p_index+" btype = "+p_btype+"   LOG_CO = "+res )
+    logger.debug(" INSIDE   []   :  p_ticker = "+p_ticker+"  index = "+p_index+" btype = "+p_btype+"   LOG_CO = "+res )
     res
   }
 
+  def getSimpleBarsCntByIndex(pTicker :Int, seqParts : Seq[Seq[BarC]], pIndex :Int) =
+    seqParts(pIndex).map(sq => sq.ticker_id == pTicker).size
 
 
 
@@ -164,11 +166,15 @@ object First extends App {
   //===================================================================================================================
   // read bar property and execute next for all bp.
 
+  val adv_width_sec    :Int = 600
+  val adv_deep_sec     :Int = 3*3600
+  val adv_bars_in_part :Int = 6
+
   val tickersWWRes =  JavaConverters.asScalaIteratorConverter(session.execute(prepqueryTickersWW.bind()).all().iterator())
-                     .asScala.toSeq.map(r => (r.getInt("ticker_id"),600,3*3600)).sortBy(_._1).toList
+                     .asScala.toSeq.map(r => (r.getInt("ticker_id"), adv_width_sec, adv_deep_sec)).sortBy(_._1).toList
 
   val tendRes : Seq[TendBarsMnMx] = {for {
-                                          (lTickerId, l_width_sec, l_deep_sec) <- tickersWWRes  // List((1,600, 3*3600),(2,600, 3*3600))
+                                          (lTickerId, l_width_sec, l_deep_sec) <- tickersWWRes
                                           thisTendRes : TendBarsMnMx  <- getBarsMinMaxTickTendConf(session, lTickerId, l_width_sec, l_deep_sec)
                                          } yield thisTendRes
                                     }.filter(r => (r.intervalBeginEndSec >= r.deep_sec))
@@ -185,7 +191,7 @@ object First extends App {
   for (b <- barsList) logger.info("ticker_id="+b.ticker_id+" begin - end :    "+b.ts_begin+" - "+b.ts_end+"  ["+b.btype+"] "+b.log_co)
 
   //divide full sequnce of Bars on 3 parts and calculate Ro.
-  val seqSeqBars_Parts = barsList.sliding(6,6).toList
+  val seqSeqBars_Parts = barsList.sliding(adv_bars_in_part,adv_bars_in_part).toList
 
   logger.info(" seqSeqBars_Parts :#################################")
   for (b <- seqSeqBars_Parts){
@@ -202,7 +208,6 @@ object First extends App {
                                     ("n",(blck.count(b => b.btype=="n"), simpleRound6Double(blck.filter(b => b.btype=="n").map(b => b.log_co).sum) ))
                                    ))
   }
-
 
   logger.info("---------------------------------------")
   logger.info("!!!!!!!!!!!  seqSeqBars_Parts_AddInfo.size="+seqSeqBars_Parts_AddInfo.size)
@@ -224,7 +229,7 @@ object First extends App {
         (getLogCoByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 1, "g") >
           getLogCoByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 0, "g"))
     ) {
-      logger.info("GREEN WAY")
+      logger.debug("GREEN WAY")
       (cticker,"g")
     }
     //2. Test on R.(Red - down bars)
@@ -238,17 +243,27 @@ object First extends App {
         (getLogCoByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 1, "r") <
           getLogCoByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 0, "r"))
     ) {
-      logger.info("RED WAY")
+      logger.debug("RED WAY")
       (cticker,"r")
     }
     else {
-      logger.info("ELSE WAY")
+      logger.debug("ELSE WAY")
       (cticker,"n")
     }
   }
 
   for (tr <- wType){
-    logger.info("RES = "+tr)
+    logger.info("RES w="+tr._2+" ticker_id = "+tr._1+" deep_sec="+adv_deep_sec+" adv_bars_in_part="+adv_bars_in_part+
+                            "   p1_size = "+getSimpleBarsCntByIndex(tr._1,seqSeqBars_Parts,0)+
+                            "   p2_size = "+getSimpleBarsCntByIndex(tr._1,seqSeqBars_Parts,1)+
+                            "   p3_size = "+getSimpleBarsCntByIndex(tr._1,seqSeqBars_Parts,2)+
+                            "   p1_cnt = "+getBtypeCntByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 0, tr._2)+
+                            "   p2_cnt = "+getBtypeCntByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 1, tr._2)+
+                            "   p3_cnt = "+getBtypeCntByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 2, tr._2)+
+                            "   p1_logco = "+getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 0, tr._2)+
+                            "   p2_logco = "+getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 1, tr._2)+
+                            "   p3_logco = "+getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 2, tr._2)
+    )
   }
 
   /*
