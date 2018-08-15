@@ -68,6 +68,43 @@ object First extends App {
   val prepQueryBars = session.prepare(queryBars)
 
 
+  val queryInsertRes =
+    """insert into mts_meta.way_adviser_n_hours(
+      	ticker_id,
+      	bar_width_sec,
+      	ts_res,
+          way,
+          deep_sec,
+          adv_bars_in_part,
+          p1_size_bars,
+          p2_size_bars,
+          p3_size_bars,
+          p1_cnt,
+          p2_cnt,
+          p3_cnt,
+          p1_logco,
+          p2_logco,
+          p3_logco)
+         values(
+      	  :ticker_id,
+      	  :bar_width_sec,
+      	  :ts_res,
+          :way,
+          :deep_sec,
+          :adv_bars_in_part,
+          :p1_size_bars,
+          :p2_size_bars,
+          :p3_size_bars,
+          :p1_cnt,
+          :p2_cnt,
+          :p3_cnt,
+          :p1_logco,
+          :p2_logco,
+          :p3_logco
+         );
+    """
+  val prepInsertRes = session.prepare(queryInsertRes)
+
   /**
     *
     * @param session
@@ -157,11 +194,8 @@ object First extends App {
     res
   }
 
-  def getSimpleBarsCntByIndex(pTicker :Int, seqParts : Seq[Seq[BarC]], pIndex :Int) =
-    seqParts(pIndex).map(sq => sq.ticker_id == pTicker).size
-
-
-
+  def getSimpleBarsCntByIndex(pTicker :Int, seqParts : List[Seq[BarC]], pIndex :Int) =
+    seqParts.filter(sb => sb.head.ticker_id == pTicker)(pIndex).size
 
   //===================================================================================================================
   // read bar property and execute next for all bp.
@@ -169,6 +203,10 @@ object First extends App {
   val adv_width_sec    :Int = 600
   val adv_deep_sec     :Int = 3*3600
   val adv_bars_in_part :Int = 6
+
+  val p1_seq_crit :Seq[Int] = Seq(adv_bars_in_part/3, adv_bars_in_part/2)
+  val p2_seq_crit :Seq[Int] = Seq(adv_bars_in_part/2, adv_bars_in_part*2/3)
+  val p3_seq_crit :Seq[Int] = Seq(adv_bars_in_part*2/3)
 
   val tickersWWRes =  JavaConverters.asScalaIteratorConverter(session.execute(prepqueryTickersWW.bind()).all().iterator())
                      .asScala.toSeq.map(r => (r.getInt("ticker_id"), adv_width_sec, adv_deep_sec)).sortBy(_._1).toList
@@ -180,20 +218,25 @@ object First extends App {
                                     }.filter(r => (r.intervalBeginEndSec >= r.deep_sec))
 
   logger.info(" tendRes: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-  for (tr <- tendRes) logger.info(tr.toString)
+  for (tr <- tendRes) logger.info("    tendRes  = "+tr.toString)
   logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
-  val barsList : Seq[BarC] = for {
+  val barsListSrc : Seq[BarC] = for {
                                   barMnMx        <- tendRes
                                   thisBar : BarC <- getBarsByTsInterval(session, barMnMx.ticker_id, barMnMx.width_sec, barMnMx.fromTs, barMnMx.ts_end)
                                  } yield thisBar
 
-  for (b <- barsList) logger.info("ticker_id="+b.ticker_id+" begin - end :    "+b.ts_begin+" - "+b.ts_end+"  ["+b.btype+"] "+b.log_co)
+  for (b <- barsListSrc) logger.debug(" barsListSrc =   ticker_id="+b.ticker_id+" begin - end :    "+b.ts_begin+" - "+b.ts_end+"  ["+b.btype+"] "+b.log_co)
 
-  //divide full sequnce of Bars on 3 parts and calculate Ro.
-  val seqSeqBars_Parts = barsList.sliding(adv_bars_in_part,adv_bars_in_part).toList
+  val barsListFilteredOnCount : Seq[BarC]  = barsListSrc.filter(bl => (barsListSrc.count(b => b.ticker_id==bl.ticker_id) == 3*adv_bars_in_part))
 
-  logger.info(" seqSeqBars_Parts :#################################")
+  //Here we need filter to take only tickers where bars count = adv_bars_in_part(6)*3
+  logger.info("barsListFilteredOnCount.size="+barsListFilteredOnCount.size)
+  for (b <- barsListFilteredOnCount) logger.info(" barsListFilteredOnCount =   ticker_id="+b.ticker_id+" begin - end :    "+b.ts_begin+" - "+b.ts_end+"  ["+b.btype+"] "+b.log_co)
+
+  val seqSeqBars_Parts = barsListFilteredOnCount.sliding(adv_bars_in_part,adv_bars_in_part).toList.filter(oneSeq => oneSeq.size == adv_bars_in_part)
+
+  logger.info(" seqSeqBars_Parts :################################# seqSeqBars_Parts.size="+seqSeqBars_Parts.size)
   for (b <- seqSeqBars_Parts){
     logger.info("ticker_id="+b.head.ticker_id+" parts : size="+b.size+" begin-end: "+b.head.ts_begin+"  "+b.last.ts_end)
   }
@@ -217,12 +260,13 @@ object First extends App {
     logger.info(" [seqSeqBars_Parts_AddInfo]   ticker_id="+p._1+"  "+p.toString)
   }
 
+
   val wType = for (cticker <- seqSeqBars_Parts_AddInfo.map(bi => bi._1).distinct.sortBy(v => v)) yield {
       //1.Test on G.(Green - up bars)
     if (
-      (Seq(2, 3) contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 0, "g")) &&
-        (Seq(3, 4) contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 1, "g")) &&
-        (Seq(4) contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 2, "g"))
+        (p1_seq_crit contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 0, "g")) &&
+        (p2_seq_crit contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 1, "g")) &&
+        (p3_seq_crit contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 2, "g"))
         &&
         (getLogCoByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 2, "g") >
           getLogCoByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 1, "g")) &&
@@ -234,9 +278,9 @@ object First extends App {
     }
     //2. Test on R.(Red - down bars)
     else if (
-      (Seq(2, 3) contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 0, "r")) &&
-        (Seq(3, 4) contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 1, "r")) &&
-        (Seq(4) contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 2, "r"))
+        (p1_seq_crit contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 0, "r")) &&
+        (p2_seq_crit contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 1, "r")) &&
+        (p3_seq_crit contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 2, "r"))
         &&
         (getLogCoByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 2, "r") <
           getLogCoByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 1, "r")) &&
@@ -254,6 +298,7 @@ object First extends App {
 
   for (tr <- wType){
     logger.info("RES w="+tr._2+" ticker_id = "+tr._1+" deep_sec="+adv_deep_sec+" adv_bars_in_part="+adv_bars_in_part+
+                            "   ts_res="+barsListFilteredOnCount.filter(bl => bl.ticker_id==tr._1).map(bl => bl.ts_end).max+
                             "   p1_size = "+getSimpleBarsCntByIndex(tr._1,seqSeqBars_Parts,0)+
                             "   p2_size = "+getSimpleBarsCntByIndex(tr._1,seqSeqBars_Parts,1)+
                             "   p3_size = "+getSimpleBarsCntByIndex(tr._1,seqSeqBars_Parts,2)+
@@ -262,9 +307,35 @@ object First extends App {
                             "   p3_cnt = "+getBtypeCntByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 2, tr._2)+
                             "   p1_logco = "+getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 0, tr._2)+
                             "   p2_logco = "+getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 1, tr._2)+
-                            "   p3_logco = "+getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 2, tr._2)
-    )
+                            "   p3_logco = "+getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 2, tr._2))
+
+  if (Seq("g","r") contains tr._2) {
+    val boundInsertRes = prepInsertRes.bind()
+      .setInt("ticker_id", tr._1)
+      .setInt("bar_width_sec", adv_width_sec)
+      .setLong("ts_res", barsListFilteredOnCount.filter(bl => bl.ticker_id == tr._1).map(bl => bl.ts_end).max)
+      .setString("way", tr._2.toString)
+      .setInt("deep_sec", adv_deep_sec)
+      .setInt("adv_bars_in_part", adv_bars_in_part)
+      .setInt("p1_size_bars", getSimpleBarsCntByIndex(tr._1, seqSeqBars_Parts, 0))
+      .setInt("p2_size_bars", getSimpleBarsCntByIndex(tr._1, seqSeqBars_Parts, 1))
+      .setInt("p3_size_bars", getSimpleBarsCntByIndex(tr._1, seqSeqBars_Parts, 2))
+      .setInt("p1_cnt", getBtypeCntByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 0, tr._2))
+      .setInt("p2_cnt", getBtypeCntByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 1, tr._2))
+      .setInt("p3_cnt", getBtypeCntByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 2, tr._2))
+      .setDouble("p1_logco", getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 0, tr._2))
+      .setDouble("p2_logco", getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 1, tr._2))
+      .setDouble("p3_logco", getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 2, tr._2))
+    session.execute(boundInsertRes)
   }
+
+  }
+
+  /*
+    (Seq(2, 3) contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 0, "g")) &&
+        (Seq(3, 4) contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 1, "g")) &&
+        (Seq(4) contai
+   */
 
   /*
   if (Seq("g","r") contains wType) {
