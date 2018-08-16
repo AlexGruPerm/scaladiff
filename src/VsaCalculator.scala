@@ -89,9 +89,9 @@ class VsaCalc(session: Session) extends rowToX(session, LoggerFactory.getLogger(
       val seqFreqInit : IndexedSeq[(Double,Int,Int)] = for (i <- 0 until rngPrc.size-1) yield {
         val rngMiddlePrc = (rngPrc(i) + rngPrc(i+1))/2
           (rngMiddlePrc,
-           dsBarsInfoMinMax.seqBars.count(b => (rngMiddlePrc >= b._1 && rngMiddlePrc <= b._2 ) ),
-           dsBarsInfoMinMax.seqBars.count(b => (( b._1 > rngMiddlePrc - prcnt && b._1 < rngMiddlePrc + prcnt) ||
-                                                ( b._2 > rngMiddlePrc - prcnt && b._2 < rngMiddlePrc + prcnt)))
+           dsBarsInfoMinMax.seqBars.count(b => (rngMiddlePrc >= b._1 && rngMiddlePrc<= b._2 ) ),
+           dsBarsInfoMinMax.seqBars.count(b => (( (b._1 > rngMiddlePrc - prcnt) && (b._1 < rngMiddlePrc + prcnt)) ||
+                                                ( (b._2 > rngMiddlePrc - prcnt) && (b._2 < rngMiddlePrc + prcnt))))
           )
       }
 
