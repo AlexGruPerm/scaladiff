@@ -331,24 +331,6 @@ object First extends App {
 
   }
 
-  /*
-    (Seq(2, 3) contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 0, "g")) &&
-        (Seq(3, 4) contains getBtypeCntByTypeIndex(cticker, seqSeqBars_Parts_AddInfo, 1, "g")) &&
-        (Seq(4) contai
-   */
-
-  /*
-  if (Seq("g","r") contains wType) {
-  //SAVE results into DB.
-    logger.info("-- ---------------------------------- --")
-    logger.info("                                        ")
-    logger.info(" FOUND "+wType+" way                    ")
-    logger.info(" SAVE ADVISE INTO DB FOR ticker_id="+seqSeqBars_Parts.head.head.ticker_id)
-    logger.info("                                        ")
-    logger.info("-- ---------------------------------- --")
-  }
-  */
-
 
 }
 
