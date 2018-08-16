@@ -296,7 +296,7 @@ object First extends App {
     }
   }
 
-  for (tr <- wType){
+  for (tr <- wType if Seq("g","r") contains tr._2){
     logger.info("RES w="+tr._2+" ticker_id = "+tr._1+" deep_sec="+adv_deep_sec+" adv_bars_in_part="+adv_bars_in_part+
                             "   ts_res="+barsListFilteredOnCount.filter(bl => bl.ticker_id==tr._1).map(bl => bl.ts_end).max+
                             "   p1_size = "+getSimpleBarsCntByIndex(tr._1,seqSeqBars_Parts,0)+
@@ -309,7 +309,6 @@ object First extends App {
                             "   p2_logco = "+getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 1, tr._2)+
                             "   p3_logco = "+getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 2, tr._2))
 
-  if (Seq("g","r") contains tr._2) {
     val boundInsertRes = prepInsertRes.bind()
       .setInt("ticker_id", tr._1)
       .setInt("bar_width_sec", adv_width_sec)
@@ -327,7 +326,6 @@ object First extends App {
       .setDouble("p2_logco", getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 1, tr._2))
       .setDouble("p3_logco", getLogCoByTypeIndex(tr._1, seqSeqBars_Parts_AddInfo, 2, tr._2))
     session.execute(boundInsertRes)
-  }
 
   }
 
