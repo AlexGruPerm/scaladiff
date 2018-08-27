@@ -1,0 +1,8 @@
+
+object VegasPlotTest extends App {
+
+
+
+}
+
+

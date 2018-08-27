@@ -14,29 +14,16 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
     """ select db_tsunx,ask from mts_src.ticks where ticker_id = :tickerId allow filtering """)
 
 
-  def upload()={
+  def upload(FileName :String,tickerID :Int)={
     logger.info("BEGIN UPLOAD.")
 
     import java.io.{BufferedWriter, FileWriter}
 
-    val out = new BufferedWriter(new FileWriter("C:\\Users\\Yakushev\\Desktop\\TEST_BC\\ticks.csv"))
+    val out = new BufferedWriter(new FileWriter("C:\\Users\\Yakushev\\Desktop\\TEST_BC\\"+FileName))
     val writer = new CSVWriter(out,';')
 
-    /*
-    val employeeSchema = Array("ts", "prc")
-    val employee1 = Array("123", "23")
-    val employee2 = Array("125", "24")
-    val listOfRecords = new java.util.ArrayList[Array[String]]()
-    listOfRecords.add(employeeSchema)
-    listOfRecords.add(employee1)
-    listOfRecords.add(employee2)
-    writer.writeAll(listOfRecords)
-    writer.flush()
-    writer.close()
-    */
-
-    val employeeSchema = Array("ts", "prc")
-    val bondPrepCsvTicks =  prepCsvTicks.bind().setInt("tickerId", 2)
+    val employeeSchema = Array("rn","ts", "prc")
+    val bondPrepCsvTicks =  prepCsvTicks.bind().setInt("tickerId", tickerId)
     val dsTickersWidths =  JavaConverters.asScalaIteratorConverter(session.execute(bondPrepCsvTicks).all().iterator())
                                          .asScala.toSeq
                                          .map(r => CsvTick(r.getLong("db_tsunx"),r.getDouble("ask"))  )
@@ -44,8 +31,8 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
     val listOfRecords = new java.util.ArrayList[Array[String]]()
     listOfRecords.add(employeeSchema)
 
-    for (rec <- dsTickersWidths){
-      listOfRecords.add(Array(rec.ts.toString,rec.prc.toString.replace('.',',')))
+    for ((rec,idx) <- dsTickersWidths.zipWithIndex){
+      listOfRecords.add(Array((idx+1).toString, rec.ts.toString, rec.prc.toString.replace('.',',')))
     }
 
     writer.writeAll(listOfRecords)
@@ -59,7 +46,20 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
 
 object CsvUploader extends App {
   val du = new DataUploader(new bar.calculator.SimpleClient("127.0.0.1").session)
-  du.upload()
+  du.upload( "EURUSD.csv",1)
+  du.upload( "AUDUSD.csv",2)
+  du.upload( "GBPUSD.csv",3)
+  du.upload( "NZDUSD.csv",4)
+  du.upload( "EURCHF.csv",5)
+  du.upload( "USDCAD.csv",6)
+  du.upload( "USDCHF.csv",7)
+  du.upload( "EURCAD.csv",8)
+  du.upload( "GBPAUD.csv",9)
+  du.upload( "GBPCAD.csv",10)
+  du.upload( "GBPCHF.csv",11)
+  du.upload( "EURGBP.csv",12)
+  du.upload( "GBPNZD.csv",13)
+  du.upload( "NZDCAD.csv",14)
 }
 
 
