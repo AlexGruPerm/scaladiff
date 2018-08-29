@@ -29,6 +29,11 @@
             <artifactId>opencsv</artifactId>
             <version>2.4</version>
         </dependency>
+        <dependency>
+            <groupId>org.sameersingh.scalaplot</groupId>
+            <artifactId>scalaplot</artifactId>
+            <version>0.1</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
