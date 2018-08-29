@@ -5,7 +5,9 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters
 
-case class CsvTick(ts :Long,prc: Double)
+case class CsvTick(ts :Long, prc: Double)
+
+case class Tickers(ticker_id :Int, ticker_code :String);
 
 class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLogger(ReadCassandraExamples.getClass)) {
   val logger = LoggerFactory.getLogger(ReadCassandraExamples.getClass)
@@ -13,6 +15,12 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
   val prepCsvTicks = session.prepare(
     """ select db_tsunx,ask from mts_src.ticks where ticker_id = :tickerId allow filtering """)
 
+  val prepTickers = session.prepare(""" select ticker_id,ticker_code from mts_meta.tickers """)
+
+  val tickersSymbols : Seq[Tickers] = JavaConverters.asScalaIteratorConverter(session.execute(prepTickers.bind()).all().iterator())
+                                                    .asScala.toSeq
+                                                    .map(r => Tickers(r.getInt("ticker_id"),r.getString("ticker_code"))  )
+                                                    .sortBy(_.ticker_id).toList
 
   def upload(FileName :String,tickerID :Int)={
     logger.info("BEGIN UPLOAD.")
@@ -22,8 +30,8 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
     val out = new BufferedWriter(new FileWriter("C:\\Users\\Yakushev\\Desktop\\TEST_BC\\"+FileName))
     val writer = new CSVWriter(out,';')
 
-    val employeeSchema = Array("rn","ts", "prc")
-    val bondPrepCsvTicks =  prepCsvTicks.bind().setInt("tickerId", tickerId)
+    val employeeSchema = Array("ts","rn", "prc")
+    val bondPrepCsvTicks =  prepCsvTicks.bind().setInt("tickerId", tickerID)
     val dsTickersWidths =  JavaConverters.asScalaIteratorConverter(session.execute(bondPrepCsvTicks).all().iterator())
                                          .asScala.toSeq
                                          .map(r => CsvTick(r.getLong("db_tsunx"),r.getDouble("ask"))  )
@@ -32,7 +40,7 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
     listOfRecords.add(employeeSchema)
 
     for ((rec,idx) <- dsTickersWidths.zipWithIndex){
-      listOfRecords.add(Array((idx+1).toString, rec.ts.toString, rec.prc.toString.replace('.',',')))
+      listOfRecords.add(Array(rec.ts.toString, (idx+1).toString, rec.prc.toString.replace('.',',')))
     }
 
     writer.writeAll(listOfRecords)
@@ -46,20 +54,7 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
 
 object CsvUploader extends App {
   val du = new DataUploader(new bar.calculator.SimpleClient("127.0.0.1").session)
-  du.upload( "EURUSD.csv",1)
-  du.upload( "AUDUSD.csv",2)
-  du.upload( "GBPUSD.csv",3)
-  du.upload( "NZDUSD.csv",4)
-  du.upload( "EURCHF.csv",5)
-  du.upload( "USDCAD.csv",6)
-  du.upload( "USDCHF.csv",7)
-  du.upload( "EURCAD.csv",8)
-  du.upload( "GBPAUD.csv",9)
-  du.upload( "GBPCAD.csv",10)
-  du.upload( "GBPCHF.csv",11)
-  du.upload( "EURGBP.csv",12)
-  du.upload( "GBPNZD.csv",13)
-  du.upload( "NZDCAD.csv",14)
+  du.tickersSymbols.map(tsmb => du.upload(tsmb.ticker_code+".csv",tsmb.ticker_id))
 }
 
 
