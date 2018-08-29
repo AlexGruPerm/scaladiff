@@ -1,8 +1,9 @@
 import au.com.bytecode.opencsv.CSVWriter
 import bar.{ReadCassandraExamples, rowToX}
 import com.datastax.driver.core.Session
-import org.slf4j.LoggerFactory
 import org.sameersingh.scalaplot.Implicits._
+import org.slf4j.LoggerFactory
+
 import scala.collection.JavaConverters
 
 case class CsvTick(ts :Long, prc: Double)
@@ -20,7 +21,7 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
   val prepCsvBars = session.prepare(
     """ select ts_begin,ts_end,o,h,l,c,log_co,disp,ticks_cnt from mts_bars.bars where ticker_id = :tickerId and bar_width_sec = :p_bar_width_sec allow filtering """)
 
-  val prepTickers = session.prepare(""" select ticker_id,ticker_code from mts_meta.tickers """)
+  val prepTickers = session.prepare(""" select ticker_id,ticker_code from mts_meta.tickers """) //where ticker_id=1 allow filtering
 
   val tickersSymbols : Seq[Tickers] = JavaConverters.asScalaIteratorConverter(session.execute(prepTickers.bind()).all().iterator())
                                                     .asScala.toSeq
@@ -51,6 +52,24 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
     writer.writeAll(listOfRecords)
     writer.flush()
     writer.close()
+
+    /*
+    output images.
+
+    val ticksTS = for ((rec,idx) <- dsTickersWidths.zipWithIndex) yield (idx.toDouble,rec.prc)
+
+    val x :Seq[Double] = ticksTS.map(t => t._1)
+    val y :Seq[Double] = ticksTS.map(t => t._2)
+
+    val series = new MemXYSeries(x, y)
+    val data = new XYData(series)
+    //save ticks as graph
+    val fn = FileName+"_TICKS"
+    output(PNG("C:\\Users\\Yakushev\\Desktop\\TEST_BC/", fn), xyChart(
+         data,
+         fn
+        ))
+    */
 
     for (w <- List(30,300,600)) {
       //------------------------------------------------------------------
@@ -103,7 +122,7 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
 
   def makeGraphImage(FileName :String,tickerID :Int)={
     val x = 0.0 until 2.0 * math.Pi by 0.1
-    output(PNG("C:\\Users\\Yakushev\\Desktop\\TEST_BC/", "test"), xyChart(x ->(math.sin(_), math.cos(_))))
+    output(PNG("C:\\Users\\Yakushev\\Desktop\\TEST_BC/", "test"), xyChart(  x ->(math.sin(_))  )         )
   }
 
 
@@ -111,8 +130,8 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
 
 object CsvUploader extends App {
   val du = new DataUploader(new bar.calculator.SimpleClient("127.0.0.1").session)
-  //du.tickersSymbols.map(tsmb => du.upload(tsmb.ticker_code,tsmb.ticker_id))
-  du.makeGraphImage("eurusd.png",1)
+  du.tickersSymbols.map(tsmb => du.upload(tsmb.ticker_code,tsmb.ticker_id))
+  //du.makeGraphImage("eurusd.png",1)
 }
 
 

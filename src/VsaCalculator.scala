@@ -76,17 +76,19 @@ class VsaCalc(session: Session) extends rowToX(session, LoggerFactory.getLogger(
                                          .iterator())
                                          .asScala.toSeq
                                          .map(r => (r.getInt("ticker_id"), r.getInt("bar_width_sec")))
-                                         .sortBy(_._1).toList.filter(deb => deb._1==1 && deb._2==30)
+                                         .sortBy(_._1).toList//.filter(deb => deb._1==1 && deb._2==30)
 
     //# debug
     for (elmTW <- dsTickersWidths) logger.debug(elmTW.toString())
 
     for((thisTickerId,thisWidthSec) <- dsTickersWidths) {
       val dsBarsInfoMinMax = readBarsExtrMinMax(thisTickerId, thisWidthSec)
+      /*
       logger.info("ticker =" + thisTickerId + " and width = " + thisWidthSec +
                                               " (H,L)PAIRS Size="+ dsBarsInfoMinMax.seqBars.size +
                                               " minL = "+ dsBarsInfoMinMax.minPrc +
                                               " maxH = "+ dsBarsInfoMinMax.maxPrc)
+      */
 
       val rngStep = (dsBarsInfoMinMax.maxPrc - dsBarsInfoMinMax.minPrc)/pDivCount
       val rngPrc = (dsBarsInfoMinMax.minPrc to dsBarsInfoMinMax.maxPrc by rngStep).toList
@@ -111,7 +113,7 @@ class VsaCalc(session: Session) extends rowToX(session, LoggerFactory.getLogger(
 
 
       for (sf <- seqFreqInit){
-        logger.info(thisTickerId+" "+thisWidthSec+" "+simpleRound5Double(sf._1)+"   "+sf._2)
+       // logger.info(thisTickerId+" "+thisWidthSec+" "+simpleRound5Double(sf._1)+"   "+sf._2)
         val boundInsertRes = prepQuerySavePrcCnt.bind()
                              .setInt("ticker_id", thisTickerId)
                              .setInt("bar_width_sec", thisWidthSec)
