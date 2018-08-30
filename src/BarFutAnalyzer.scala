@@ -76,7 +76,7 @@ class BarFutureAnalyzer(session: Session) extends rowToX(session, LoggerFactory.
     в конце вставляем seq[BarFutureAnal] в таблицу  mts_bars.bars_future
     */
 
-    val seqBarAnalyzed :Seq[BarFutureAnal]  =
+    val seqBarAnalyzed :Seq[BarFutureAnal] =
       for (
        tw <- tickersWidths;
        seqB <- tw.get_seqBars
@@ -86,6 +86,8 @@ class BarFutureAnalyzer(session: Session) extends rowToX(session, LoggerFactory.
       }
 
     logger.info("seqBarAnalyzed.size="+seqBarAnalyzed.size)
+    logger.info("1 seqBarAnalyzed.size="+seqBarAnalyzed.filter(r => r.ticker_id == 1).size)
+    logger.info("2 seqBarAnalyzed.size="+seqBarAnalyzed.filter(r => r.ticker_id == 2).size)
 
   }
 
