@@ -14,8 +14,12 @@ class BarFutureAnalyzer(session: Session) extends rowToX(session, LoggerFactory.
                                                                           r.getInt("bar_width_sec")
                                                                          ))
                                      .sortBy(_.ticker_id).toList
-                                     .filter(r => (r.ticker_id == 1 || r.ticker_id == 2) && r.bar_width_sec == 30) // DEBUG PURPOSE
+                                     // DEBUG PURPOSE
+                                     //.filter(r => (r.ticker_id == 1 || r.ticker_id == 2) && r.bar_width_sec == 30)
 
+  def simpleRound5Double(valueD : Double) = {
+    (valueD * 100000).round / 100000.toDouble
+  }
 
   /**
     * Make search in the Future for 1 fixed log.
@@ -24,9 +28,9 @@ class BarFutureAnalyzer(session: Session) extends rowToX(session, LoggerFactory.
     * Return : (Double,Char,Long) - Close price, Result type:u,d ., ts_end of close bar.
     */
   def searchFut(currBar : BarC, restBars : Seq[BarC], logReturn : Double) =  {
-    val uPrice :Double = Math.exp(Math.log(currBar.c) + logReturn)
-    val dPrice :Double = Math.exp(Math.log(currBar.c) - logReturn)
-    restBars.find(p => (uPrice > p.l && dPrice < p.h)) match {
+    val uPrice :Double = simpleRound5Double(Math.exp(Math.log(currBar.c) + logReturn))
+    val dPrice :Double = simpleRound5Double(Math.exp(Math.log(currBar.c) - logReturn))
+    restBars.find(p => ((uPrice > p.l && uPrice < p.h) || dPrice > p.l && dPrice < p.h)) match {
       case Some(b) => {
         if (b.l > currBar.c) (uPrice,"u",b.ts_end)
         else if (b.h < currBar.c) (dPrice,"d",b.ts_end)
@@ -71,10 +75,6 @@ class BarFutureAnalyzer(session: Session) extends rowToX(session, LoggerFactory.
   def calc() = {
     tickersWidths.foreach(r => logger.info("1. ticker_id = "+r.ticker_id+" width_sec = "+r.bar_width_sec+
                                              " FROM max_ts_end = "+r.get_maxTsEnd+" READED "+r.get_seqBars.size+" BARS."))
-    /*
-    Идём по каждому бару с начала (самый старый) и для каждого делаем просмотр вперед для 3-х случаев, заполняя seq of BarFutureAnal
-    в конце вставляем seq[BarFutureAnal] в таблицу  mts_bars.bars_future
-    */
 
     val seqBarAnalyzed :Seq[BarFutureAnal] =
       for (
@@ -85,9 +85,29 @@ class BarFutureAnalyzer(session: Session) extends rowToX(session, LoggerFactory.
         analyzeThisBar(seqB)
       }
 
-    logger.info("seqBarAnalyzed.size="+seqBarAnalyzed.size)
-    logger.info("1 seqBarAnalyzed.size="+seqBarAnalyzed.filter(r => r.ticker_id == 1).size)
-    logger.info("2 seqBarAnalyzed.size="+seqBarAnalyzed.filter(r => r.ticker_id == 2).size)
+    logger.info("FULL SIZE ANALYZED BARS = "+seqBarAnalyzed.size)
+    for(r <- seqBarAnalyzed.map(sb => sb.ticker_id).distinct) logger.info(" 2. ticker="+r+" bars size="+seqBarAnalyzed.filter(sb => sb.ticker_id==r).size)
+
+    for(r <- seqBarAnalyzed) {
+      val boundSaveFutureAnalyze = prepInsertFutureAnalyze.bind()
+        .setInt("p_ticker_id",r.ticker_id)
+        .setInt("p_bar_width_sec",r.bar_width_sec)
+        .setLong("p_ts_end",r.ts_end)
+        .setDouble("p_c",r.c)
+        //-----------
+        .setDouble("p_ft_log_0017_cls_price",r.ft_log_0017_cls_price)
+        .setString("p_ft_log_0017_res",r.ft_log_0017_res)
+        .setLong("p_ft_log_0017_ts_end",r.ft_log_0017_ts_end)
+        //-----------
+        .setDouble("p_ft_log_0034_cls_price",r.ft_log_0034_cls_price)
+        .setString("p_ft_log_0034_res",r.ft_log_0034_res)
+        .setLong("p_ft_log_0034_ts_end",r.ft_log_0034_ts_end)
+        //-----------
+        .setDouble("p_ft_log_0051_cls_price",r.ft_log_0051_cls_price)
+        .setString("p_ft_log_0051_res",r.ft_log_0051_res)
+        .setLong("p_ft_log_0051_ts_end",r.ft_log_0051_ts_end)
+      session.execute(boundSaveFutureAnalyze)
+    }
 
   }
 
