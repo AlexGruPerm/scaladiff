@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters
 
-
 class BarFutureAnalyzer(session: Session) extends rowToX(session, LoggerFactory.getLogger(ReadCassandraExamples.getClass)){
   val logger = LoggerFactory.getLogger(ReadCassandraExamples.getClass)
 
@@ -14,8 +13,6 @@ class BarFutureAnalyzer(session: Session) extends rowToX(session, LoggerFactory.
                                                                           r.getInt("bar_width_sec")
                                                                          ))
                                      .sortBy(_.ticker_id).toList
-                                     // DEBUG PURPOSE
-                                     //.filter(r => (r.ticker_id == 1 || r.ticker_id == 2) && r.bar_width_sec == 30)
 
   def simpleRound5Double(valueD : Double) = {
     (valueD * 100000).round / 100000.toDouble
@@ -112,7 +109,6 @@ class BarFutureAnalyzer(session: Session) extends rowToX(session, LoggerFactory.
   }
 
 }
-
 
 
 object BarFutAnalyzer extends App {
