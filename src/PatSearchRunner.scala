@@ -26,8 +26,8 @@ class PatternSearcher(session: Session) extends PatternSearcherCommon(session, L
 
       tp.patternForSearch match {
         case pfs: PatternForSearchCls => {
+          logger.info("> Pattern last bar PRICE_C="+pfs.getSeqBarCpat.last.b.c)
           for ((bp, idx) <- pfs.getSeqBarCpat.zipWithIndex) {
-
            // Temporary closed.
             logger.info(" index=  " + idx + " " + bp.b.btype + "  ticksCnt=" + bp.b.ticks_cnt + " tsEnd=" + bp.b.ts_end +
               " prcntTicks (" + bp.ticks_cnt_prcnt_from + " - " + bp.ticks_cnt_prcnt_to + ") " +
@@ -67,7 +67,7 @@ class PatternSearcher(session: Session) extends PatternSearcherCommon(session, L
       logger.info("resFromFutAnal.size = "+resFromFutAnal.size)
 
       for (rfa <- resFromFutAnal) {
-        logger.info(rfa.toString)
+        logger.info(" FutAnal="+rfa.toString)
       }
 
       //logger.info("-----------------------------------------------")
@@ -92,6 +92,36 @@ class PatternSearcher(session: Session) extends PatternSearcherCommon(session, L
     logger.info("OUTPUT FullRes.size="+FullRes.size)
     for (thisRes <- FullRes) {
       logger.info("ticker_id="+thisRes._1+" width="+thisRes._2+" currPatternBarsSize="+thisRes._3.size+" FoundPatternsInHistory="+thisRes._4.size+" FoundFutureAnalBars="+thisRes._5.size)
+
+/*
+ticker_id            int,
+	bar_width_sec        int,
+    patt_ts_begin        bigint,       // ts_begin первого    бара в искомой (текущей) формации
+    patt_ts_end          bigint,       // ts_end   последнего бара в искомой формации
+    patt_bars_count      int,          // количество баров в искомой формации
+    history_found_tsends list<bigint>, // List(ts_end) найденных формаций в истории по искомой формации
+*/
+
+      logger.info("history_found_tsends="+thisRes._4.map(ri => ri.last).map(r => r.ts_end).toString)
+
+      val r_0017_res_u = thisRes._5.filter(rb => rb.ft_log_0017_res=="u").size
+      val r_0017_res_d = thisRes._5.filter(rb => rb.ft_log_0017_res=="d").size
+      val r_0017_res_n = thisRes._5.filter(rb => rb.ft_log_0017_res=="n").size
+
+      val r_0034_res_u = thisRes._5.filter(rb => rb.ft_log_0034_res=="u").size
+      val r_0034_res_d = thisRes._5.filter(rb => rb.ft_log_0034_res=="d").size
+      val r_0034_res_n = thisRes._5.filter(rb => rb.ft_log_0034_res=="n").size
+
+      val r_0051_res_u = thisRes._5.filter(rb => rb.ft_log_0051_res=="u").size
+      val r_0051_res_d = thisRes._5.filter(rb => rb.ft_log_0051_res=="d").size
+      val r_0051_res_n = thisRes._5.filter(rb => rb.ft_log_0051_res=="n").size
+
+      val r_sum_res_u = r_0017_res_u + r_0034_res_u + r_0051_res_u
+      val r_sum_res_d = r_0017_res_d + r_0034_res_d + r_0051_res_d
+      val r_sum_res_n = r_0017_res_n + r_0034_res_n + r_0051_res_n
+
+      logger.info("r_sum_res_u="+r_sum_res_u+"  r_sum_res_d="+r_sum_res_d+"  r_sum_res_n="+r_sum_res_n)
+
     }
 
 
