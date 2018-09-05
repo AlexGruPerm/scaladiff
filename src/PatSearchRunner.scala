@@ -21,7 +21,7 @@ class PatternSearcher(session: Session) extends PatternSearcherCommon(session, L
                         )
       .sortBy(_.bar_width_sec).toList.filter(tp => tp.ticker_id==11 && tp.bar_width_sec==30)
 
-    for (tp <- tickersProps){
+    val FullRes = for (tp <- tickersProps) yield {
       //logger.info("   ticker="+tp.ticker_id+" width_sec="+tp.bar_width_sec+"   fullSeqBars="+tp.seqBars.size/*+"   getSearchArea="+tp.searchArea.size*/)
 
       tp.patternForSearch match {
@@ -54,7 +54,7 @@ class PatternSearcher(session: Session) extends PatternSearcherCommon(session, L
        */
 
        for(r <- res) {
-         logger.info("    size="+r.size+ "           ts_begin "+r.head.ts_begin+"  ts_end "+r.last.ts_end)
+         logger.info(/*"    size="+r.size+*/ "           ts_begin "+r.head.ts_begin+"  ts_end "+r.last.ts_end)
        }
 
 
@@ -71,7 +71,32 @@ class PatternSearcher(session: Session) extends PatternSearcherCommon(session, L
       }
 
       //logger.info("-----------------------------------------------")
+      //return for next process
+      (
+        tp.ticker_id,
+        tp.bar_width_sec,
+      // CurrPattern
+        {tp.patternForSearch match {
+          case pfs: PatternForSearchCls => pfs.getSeqBarCpat
+          case None => null
+        }},
+      // FoundCompared
+        res,
+      // FutAnalResults
+        resFromFutAnal
+      )
     }
+
+    // compexOutputReults = {
+    logger.info("=============================")
+    logger.info("OUTPUT FullRes.size="+FullRes.size)
+    for (thisRes <- FullRes) {
+      logger.info("ticker_id="+thisRes._1+" width="+thisRes._2+" currPatternBarsSize="+thisRes._3.size+" FoundPatternsInHistory="+thisRes._4.size+" FoundFutureAnalBars="+thisRes._5.size)
+    }
+
+
+    // saveResultsIntoDB
+
 
     logger.info("End pattern searcher.")
   }
