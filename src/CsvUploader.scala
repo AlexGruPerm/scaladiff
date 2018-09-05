@@ -1,10 +1,6 @@
-import au.com.bytecode.opencsv.CSVWriter
-import bar.{ReadCassandraExamples, rowToX}
+//import au.com.bytecode.opencsv.CSVWriter
+//import bar.{ReadCassandraExamples, rowToX}
 import com.datastax.driver.core.Session
-import org.sameersingh.scalaplot.Implicits._
-import org.slf4j.LoggerFactory
-
-import scala.collection.JavaConverters
 
 case class CsvTick(ts :Long, prc: Double)
 
@@ -12,8 +8,11 @@ case class CsvBar(ts_begin :Long,ts_end :Long,o :Double,h :Double,l :Double,c :D
 
 case class Tickers(ticker_id :Int, ticker_code :String);
 
-class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLogger(ReadCassandraExamples.getClass)) {
-  val logger = LoggerFactory.getLogger(ReadCassandraExamples.getClass)
+//class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLogger(ReadCassandraExamples.getClass))
+
+class DataUploader(session: Session) {
+  /*val logger = LoggerFactory.getLogger(ReadCassandraExamples.getClass)
+
 
   val prepCsvTicks = session.prepare(
     """ select db_tsunx,ask from mts_src.ticks where ticker_id = :tickerId allow filtering """)
@@ -53,23 +52,6 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
     writer.flush()
     writer.close()
 
-    /*
-    output images.
-
-    val ticksTS = for ((rec,idx) <- dsTickersWidths.zipWithIndex) yield (idx.toDouble,rec.prc)
-
-    val x :Seq[Double] = ticksTS.map(t => t._1)
-    val y :Seq[Double] = ticksTS.map(t => t._2)
-
-    val series = new MemXYSeries(x, y)
-    val data = new XYData(series)
-    //save ticks as graph
-    val fn = FileName+"_TICKS"
-    output(PNG("C:\\Users\\Yakushev\\Desktop\\TEST_BC/", fn), xyChart(
-         data,
-         fn
-        ))
-    */
 
     for (w <- List(30,300,600)) {
       //------------------------------------------------------------------
@@ -125,12 +107,12 @@ class DataUploader(session: Session) extends rowToX(session, LoggerFactory.getLo
     output(PNG("C:\\Users\\Yakushev\\Desktop\\TEST_BC/", "test"), xyChart(  x ->(math.sin(_))  )         )
   }
 
-
+*/
 }
 
 object CsvUploader extends App {
-  val du = new DataUploader(new bar.calculator.SimpleClient("127.0.0.1").session)
-  du.tickersSymbols.map(tsmb => du.upload(tsmb.ticker_code,tsmb.ticker_id))
+  //val du = new DataUploader(new bar.calculator.SimpleClient("127.0.0.1").session)
+  //du.tickersSymbols.map(tsmb => du.upload(tsmb.ticker_code,tsmb.ticker_id))
   //du.makeGraphImage("eurusd.png",1)
 }
 

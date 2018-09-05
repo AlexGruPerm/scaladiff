@@ -1,11 +1,11 @@
-import bar.{ReadCassandraExamples, rowToX}
-import com.datastax.driver.core.Session
+import bar.{PatternSearcherCommon, ReadCassandraExamples}
+import com.datastax.driver.core.{Cluster, Session}
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters
 
 
-class PatternSearcher(session: Session) extends rowToX(session, LoggerFactory.getLogger(ReadCassandraExamples.getClass)) {
+class PatternSearcher(session: Session) extends PatternSearcherCommon(session, LoggerFactory.getLogger(ReadCassandraExamples.getClass)) {
   val logger = LoggerFactory.getLogger(ReadCassandraExamples.getClass)
 
   // How much bars in pattern, taken from last
@@ -20,17 +20,22 @@ class PatternSearcher(session: Session) extends rowToX(session, LoggerFactory.ge
       .sortBy(_.ticker_id).toList.filter(tp => tp.ticker_id==1 && tp.bar_width_sec==30)
 
     for (tp <- tickersProps){
-      logger.info("PatternSearcher 1. ticker="+tp.ticker_id+" bar_width_sec="+tp.bar_width_sec+"   fullSeqBars="+tp.seqBars.size+"   getSearchArea="+tp.getSearchArea.size)
+      logger.info("PatternSearcher 1. ticker="+tp.ticker_id+" bar_width_sec="+tp.bar_width_sec+"   fullSeqBars="+tp.seqBars.size+"   getSearchArea="+tp.searchArea.size)
 
-      for ((bp,idx) <- tp.getPatternForSearch.getSeqBarCpat.zipWithIndex) {
-        logger.info(" index=  "+idx+" "+ bp.b.btype+" "+ bp.b.ts_end +
-          " prcntTicks (" + bp.ticks_cnt_prcnt_from + " - " +bp.ticks_cnt_prcnt_to+") "+
-          " prcntLogCO ("+bp.abs_logco_prcnt_from+" - "+bp.abs_logco_prcnt_to+")"
-          )
+      tp.patternForSearch match {
+        case pfs: PatternForSearchCls => {
+          for ((bp, idx) <- pfs.getSeqBarCpat.zipWithIndex) {
+            logger.info(" index=  " + idx + " " + bp.b.btype + " " + bp.b.ts_end +
+              " prcntTicks (" + bp.ticks_cnt_prcnt_from + " - " + bp.ticks_cnt_prcnt_to + ") " +
+              " prcntLogCO (" + bp.abs_logco_prcnt_from + " - " + bp.abs_logco_prcnt_to + ")"
+            )
+          }
+        }
+        case None => logger.info("patternForSearch is Empty")
       }
 
       logger.info("----------")
-      logger.info("searchArea.size="+tp.getSearchArea.size+" LAST ts_end="+tp.getSearchArea.last.ts_end)
+      logger.info("searchArea.size="+tp.searchArea.size+" LAST ts_end="+{if (tp.searchArea.nonEmpty) tp.searchArea.last.ts_end})
 
       //val searchRes :Seq[BarC] =
        val res = tp.getSearchResult
@@ -42,23 +47,15 @@ class PatternSearcher(session: Session) extends rowToX(session, LoggerFactory.ge
 
     }
 
-/*
-  val seqBarAnalyzed :Seq[BarFutureAnal] =
-      for (
-       tw <- tickersWidths;
-       seqB <- tw.getSeqBars
-      )
-      yield {
-        analyzeThisBar(seqB)
-      }
-*/
-
     logger.info("End pattern searcher.")
   }
 
 }
 
 object PatSearchRunner extends App {
-  val ps = new PatternSearcher(new bar.calculator.SimpleClient("127.0.0.1").session)
+  private val cluster = Cluster.builder().addContactPoint("127.0.0.1").build()
+  val session = cluster.connect()
+
+  val ps = new PatternSearcher(session)
   ps.calc(4)
 }
