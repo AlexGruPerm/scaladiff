@@ -43,7 +43,7 @@ class BarFutureAnalyzer(session: Session) extends rowToX(session, LoggerFactory.
       * restBars contains all bars for ticker and width_sec that has ts_begin less than ts_end of current input bar.
       */
     val restBars = tickersWidths.filter(tw => tw.ticker_id == currBar.ticker_id && tw.bar_width_sec == currBar.bar_width_sec)
-                                .head.get_seqBars
+                                .head.getSeqBars
                                 .dropWhile((b :BarC) => {b.ts_begin < currBar.ts_end})
     val listOfLogs = Seq(0.0017, 0.0034, 0.0051)
 
@@ -71,12 +71,12 @@ class BarFutureAnalyzer(session: Session) extends rowToX(session, LoggerFactory.
 
   def calc() = {
     tickersWidths.foreach(r => logger.info("1. ticker_id = "+r.ticker_id+" width_sec = "+r.bar_width_sec+
-                                             " FROM max_ts_end = "+r.get_maxTsEnd+" READED "+r.get_seqBars.size+" BARS."))
+                                             " FROM max_ts_end = "+r.getMaxTsEnd+" READED "+r.getSeqBars.size+" BARS."))
 
     val seqBarAnalyzed :Seq[BarFutureAnal] =
       for (
        tw <- tickersWidths;
-       seqB <- tw.get_seqBars
+       seqB <- tw.getSeqBars
       )
       yield {
         analyzeThisBar(seqB)
