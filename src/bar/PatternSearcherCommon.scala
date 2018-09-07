@@ -42,6 +42,51 @@ abstract class PatternSearcherCommon(val session: Session,val alogger: Logger) {
 
   val prepResFromFutAnalyze = session.prepare(""" select * from mts_bars.bars_future where ticker_id=:p_ticker_id and bar_width_sec=:p_width_sec and ts_end in :ts_end_collect; """)
 
+  val prepSavePatSearchRes = session.prepare(
+    """
+      insert into mts_bars.pattern_search_results(
+          ticker_id,
+          bar_width_sec,
+          patt_ts_begin,
+          patt_ts_end,
+          patt_end_c,
+          patt_bars_count,
+          history_found_tsends,
+          ft_log_0017_res_u,
+          ft_log_0017_res_d,
+          ft_log_0017_res_n,
+          ft_log_0034_res_u,
+          ft_log_0034_res_d,
+          ft_log_0034_res_n,
+          ft_log_0051_res_u,
+          ft_log_0051_res_d,
+          ft_log_0051_res_n,
+          ft_log_sum_u,
+          ft_log_sum_d,
+          ft_log_sum_n)
+   values(
+          :p_ticker_id,
+          :p_bar_width_sec,
+          :p_patt_ts_begin,
+          :p_patt_ts_end,
+          :p_patt_end_c,
+          :p_patt_bars_count,
+          :p_history_found_tsends,
+          :p_ft_log_0017_res_u,
+          :p_ft_log_0017_res_d,
+          :p_ft_log_0017_res_n,
+          :p_ft_log_0034_res_u,
+          :p_ft_log_0034_res_d,
+          :p_ft_log_0034_res_n,
+          :p_ft_log_0051_res_u,
+          :p_ft_log_0051_res_d,
+          :p_ft_log_0051_res_n,
+          :p_ft_log_sum_u,
+          :p_ft_log_sum_d,
+          :p_ft_log_sum_n
+          );
+    """)
+
   //----------------------------------------------------------------------------------
   //Current pattern
   case class PatternForSearchCls(seqBarsSrc : Seq[BarC]) {

@@ -19,7 +19,7 @@ class PatternSearcher(session: Session) extends PatternSearcherCommon(session, L
                                                  r.getInt("bar_width_sec"),
                                                  deepCntPattern)
                         )
-      .sortBy(_.bar_width_sec).toList.filter(tp => tp.ticker_id==11 && tp.bar_width_sec==30)
+      .sortBy(_.bar_width_sec).toList/*.filter(tp => tp.ticker_id==11 && tp.bar_width_sec==30)*/  //#DEBUG FILTER
 
     val FullRes = for (tp <- tickersProps) yield {
       //logger.info("   ticker="+tp.ticker_id+" width_sec="+tp.bar_width_sec+"   fullSeqBars="+tp.seqBars.size/*+"   getSearchArea="+tp.searchArea.size*/)
@@ -29,7 +29,7 @@ class PatternSearcher(session: Session) extends PatternSearcherCommon(session, L
           logger.info("> Pattern last bar PRICE_C="+pfs.getSeqBarCpat.last.b.c)
           for ((bp, idx) <- pfs.getSeqBarCpat.zipWithIndex) {
            // Temporary closed.
-            logger.info(" index=  " + idx + " " + bp.b.btype + "  ticksCnt=" + bp.b.ticks_cnt + " tsEnd=" + bp.b.ts_end +
+            logger.info(" index=  " + idx + " " + bp.b.btype + "  ticksCnt=" + bp.b.ticks_cnt + " tsBegin="+bp.b.ts_begin+" tsEnd=" + bp.b.ts_end +
               " prcntTicks (" + bp.ticks_cnt_prcnt_from + " - " + bp.ticks_cnt_prcnt_to + ") " +
               " prcntLogCO (" + bp.abs_logco_prcnt_from + " - " + bp.abs_logco_prcnt_to + ")"
             )
@@ -90,7 +90,7 @@ class PatternSearcher(session: Session) extends PatternSearcherCommon(session, L
     // compexOutputReults = {
     logger.info("=============================")
     logger.info("OUTPUT FullRes.size="+FullRes.size)
-    for (thisRes <- FullRes) {
+    for (thisRes <- FullRes if thisRes._5.nonEmpty) {
       logger.info("ticker_id="+thisRes._1+" width="+thisRes._2+" currPatternBarsSize="+thisRes._3.size+" FoundPatternsInHistory="+thisRes._4.size+" FoundFutureAnalBars="+thisRes._5.size)
 
 /*
@@ -122,6 +122,28 @@ ticker_id            int,
 
       logger.info("r_sum_res_u="+r_sum_res_u+"  r_sum_res_d="+r_sum_res_d+"  r_sum_res_n="+r_sum_res_n)
 
+      val boundSavePattSearch = prepSavePatSearchRes.bind()
+                                    .setInt("p_ticker_id",thisRes._1)
+                                    .setInt("p_bar_width_sec",thisRes._2)
+                                    .setLong("p_patt_ts_begin",thisRes._3.head.b.ts_begin)
+                                    .setLong("p_patt_ts_end",thisRes._3.last.b.ts_end)
+                                    .setDouble("p_patt_end_c",thisRes._3.last.b.c)
+                                    .setInt("p_patt_bars_count",thisRes._3.size)
+                                    .setList("p_history_found_tsends",thisRes._4.map(ri => ri.last).map(r => r.ts_end.asInstanceOf[java.lang.Long]).toList.asJava)
+                                    .setInt("p_ft_log_0017_res_u",r_0017_res_u)
+                                    .setInt("p_ft_log_0017_res_d",r_0017_res_d)
+                                    .setInt("p_ft_log_0017_res_n",r_0017_res_n)
+                                    .setInt("p_ft_log_0034_res_u",r_0034_res_u)
+                                    .setInt("p_ft_log_0034_res_d",r_0034_res_d)
+                                    .setInt("p_ft_log_0034_res_n",r_0034_res_n)
+                                    .setInt("p_ft_log_0051_res_u",r_0051_res_u)
+                                    .setInt("p_ft_log_0051_res_d",r_0051_res_d)
+                                    .setInt("p_ft_log_0051_res_n",r_0051_res_n)
+                                    .setInt("p_ft_log_sum_u",r_sum_res_u)
+                                    .setInt("p_ft_log_sum_d",r_sum_res_d)
+                                    .setInt("p_ft_log_sum_n",r_sum_res_n)
+
+      session.execute(boundSavePattSearch)
     }
 
 
