@@ -1,4 +1,4 @@
-import bar.calculator.BarFutAnalRes
+import bar.calculator.{BarCPat, BarFutAnalRes}
 import bar.{PatternSearcherCommon, ReadCassandraExamples}
 import com.datastax.driver.core.{Cluster, Session}
 import org.slf4j.LoggerFactory
@@ -78,7 +78,7 @@ class PatternSearcher(session: Session) extends PatternSearcherCommon(session, L
       // CurrPattern
         {tp.patternForSearch match {
           case pfs: PatternForSearchCls => pfs.getSeqBarCpat
-          case None => null
+          case None                     => null // Seq[BarCPat]
         }},
       // FoundCompared
         res,
@@ -125,7 +125,7 @@ ticker_id            int,
       val boundSavePattSearch = prepSavePatSearchRes.bind()
                                     .setInt("p_ticker_id",thisRes._1)
                                     .setInt("p_bar_width_sec",thisRes._2)
-                                    .setLong("p_patt_ts_begin",thisRes._3.head.b.ts_begin)
+                                    .setLong("p_patt_ts_begin",Some(thisRes._3.head.b.ts_begin)
                                     .setLong("p_patt_ts_end",thisRes._3.last.b.ts_end)
                                     .setDouble("p_patt_end_c",thisRes._3.last.b.c)
                                     .setInt("p_patt_bars_count",thisRes._3.size)
